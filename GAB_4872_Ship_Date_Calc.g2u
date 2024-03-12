@@ -1,0 +1,1080 @@
+Program.Sub.ScreenSU.Start
+Gui.frmMsg..Create
+Gui.frmMsg..Caption("Calculated Ship Date")
+Gui.frmMsg..Size(7605,5025)
+Gui.frmMsg..MinX(0)
+Gui.frmMsg..MinY(0)
+Gui.frmMsg..Position(0,0)
+Gui.frmMsg..BackColor(-2147483633)
+Gui.frmMsg..MinButton(False)
+Gui.frmMsg..MousePointer(0)
+Gui.frmMsg..Event(UnLoad,frmMsg_UnLoad)
+Gui.frmMsg.cmdOk.Create(Button)
+Gui.frmMsg.cmdOk.Size(855,375)
+Gui.frmMsg.cmdOk.Position(6585,4260)
+Gui.frmMsg.cmdOk.Caption("OK")
+Gui.frmMsg.cmdOk.Event(Click,frmMsg_UnLoad)
+Gui.frmMsg.cmdOk.Anchor(10)
+Gui.frmMsg.GsGCParts.Create(GsGridControl)
+Gui.frmMsg.GsGCParts.Size(7410,3870)
+Gui.frmMsg.GsGCParts.Position(30,360)
+Gui.frmMsg.GsGCParts.Anchor(15)
+Gui.frmMsg.lblShipDate.Create(Label,"Calculated Ship Date:",True,1710,255,0,4155,105,True,0,"Arial",8,-2147483633,0)
+Gui.frmMsg.lblShipDate.Anchor(9)
+Gui.frmMsg.dtpShipDate.Create(DatePicker)
+Gui.frmMsg.dtpShipDate.Enabled(False)
+Gui.frmMsg.dtpShipDate.Size(1230,285)
+Gui.frmMsg.dtpShipDate.Position(5880,15)
+Gui.frmMsg.dtpShipDate.Anchor(9)
+Gui.frmMsg.lblShipDate2.Create(Label,"Current Ship Date:",True,1470,255,0,30,105,True,0,"Arial",8,-2147483633,0)
+Gui.frmMsg.dtpShipDate2.Create(DatePicker)
+Gui.frmMsg.dtpShipDate2.Enabled(False)
+Gui.frmMsg.dtpShipDate2.Size(1230,285)
+Gui.frmMsg.dtpShipDate2.Position(1515,15)
+Gui.frmMsg.optShipDate2.Create(Option)
+Gui.frmMsg.optShipDate2.Enabled(False)
+Gui.frmMsg.optShipDate2.Size(285,255)
+Gui.frmMsg.optShipDate2.Position(2790,30)
+Gui.frmMsg.optShipDate.Create(Option)
+Gui.frmMsg.optShipDate.Enabled(False)
+Gui.frmMsg.optShipDate.Size(285,255)
+Gui.frmMsg.optShipDate.Position(7155,30)
+Gui.frmMsg.optShipDate.Anchor(9)
+Program.Sub.ScreenSU.End
+
+Program.Sub.Preflight.Start
+	V.Global.sPart.Declare(String," ")
+	V.Global.sRev.Declare(String," ")
+	V.Global.sLoc.Declare(String," ")
+	V.Global.sGSSPart.Declare(String," ")
+	V.Global.iRunQty.Declare
+	V.Global.sHolidays.Declare
+	V.Global.sFileLock.Declare
+	V.Global.sType.Declare
+	V.Global.sOrderNo.Declare
+	V.Global.sOrderLine.Declare
+	V.Global.sMessage.Declare
+	V.Global.sNewDateFile.Declare
+	V.Global.sMaxDateFile.Declare
+	V.Global.sPassedDateFile.Declare
+	V.Global.sJobFile.Declare
+	V.Global.dDate.Declare
+	V.Global.dDate.Set(01/01/1900)
+	V.Global.iPID.Declare
+	V.Global.sdtPartXML.Declare
+	F.Intrinsic.String.Build("{0}\GAB_4872_dtParts.xml",V.Caller.LocalGSSTempDir,V.Global.sdtPartXML)
+	V.Global.bNET.Declare
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+	F.Intrinsic.Control.Try
+	V.Local.sError.Declare
+	
+	V.Local.bFileExists.Declare
+	V.Local.sFile.Declare
+	V.Local.sIcon.Declare
+	
+	F.Intrinsic.String.Build("{0}\gss2.ico",V.Caller.GasDir,V.Local.sIcon)
+	Gui.frmMsg..Icon(V.Local.sIcon)
+	
+	F.Intrinsic.String.Build("{0}\GAB_4872_PASSED_DATE.txt",V.Caller.FilesDir,V.Global.sPassedDateFile)
+	
+	F.Intrinsic.String.Build("{0}\GAB_4872_MAX_DATE.txt",V.Caller.LocalGSSTempDir,V.Global.sMaxDateFile)
+	F.Intrinsic.File.Exists(V.Global.sMaxDateFile,V.Local.bFileExists)
+	F.Intrinsic.Control.If(V.Local.bFileExists)
+		F.Intrinsic.File.DeleteFile(V.Global.sMaxDateFile)
+	F.Intrinsic.Control.EndIf
+	
+	F.Intrinsic.Control.CallSub(GetOptions)
+	
+	F.Intrinsic.Control.SelectCase(V.Caller.Hook)
+		F.Intrinsic.Control.Case(12010)
+			V.Passed.000162.Set("Calc Ship Date")
+		F.Intrinsic.Control.Case(10260)
+			V.Passed.000201.Set("Calc Ship Date")
+		F.Intrinsic.Control.CaseAny(12410,10670)
+			F.Intrinsic.String.Build("{0}\GAB_4872_NEW_DATE.txt",V.Caller.LocalGSSTempDir,V.Global.sNewDateFile)
+			F.Intrinsic.File.Exists(V.Global.sNewDateFile,V.Local.bFileExists)
+			F.Intrinsic.Control.If(V.Local.bFileExists)
+				F.Intrinsic.File.File2String(V.Global.sNewDateFile,V.Local.sFile)
+				F.Intrinsic.String.Split(V.Local.sFile,"*!*",V.Local.sFile)
+				V.Global.sPart.Set(V.Local.sFile(0))
+				V.Global.sRev.Set(V.Local.sFile(1))
+				V.Global.sLoc.Set(V.Local.sFile(2))
+				V.Global.iRunQty.Set(V.Local.sFile(3))
+				V.Global.sOrderNo.Set(V.Local.sFile(4))
+				V.Global.sOrderLine.Set(V.Local.sFile(5))
+				V.Global.dDate.Set(V.Local.sFile(6))
+				F.Intrinsic.String.GSSPartString(V.Global.sPart,V.Global.sRev,V.Global.sGSSPart)
+			F.Intrinsic.Control.Else
+				V.Global.sType.Set("Order No")
+				F.Intrinsic.Control.If(V.Passed.000052,=,"")
+					V.Global.sMessage.Set("Part Missing. Please enter.")
+				F.Intrinsic.Control.EndIf
+				
+				F.Intrinsic.Control.If(V.Passed.000007,=,".0000")
+					F.Intrinsic.Control.If(V.Global.sMessage,=,"")
+						V.Global.sMessage.Set("Order Qty Missing. Please enter.")
+					F.Intrinsic.Control.Else
+						F.Intrinsic.String.Build("{0}{1}Order Qty Missing. Please enter.",V.Global.sMessage,V.Ambient.NewLine,V.Global.sMessage)
+					F.Intrinsic.Control.EndIf
+				F.Intrinsic.Control.EndIf
+				
+				F.Intrinsic.Control.If(V.Global.sMessage,<>,"")
+					F.Intrinsic.UI.Msgbox(V.Global.sMessage,"Calc Ship Date")
+					F.Intrinsic.Control.End
+				F.Intrinsic.Control.EndIf
+				
+				V.Global.sPart.Set(V.Passed.000052)
+				V.Global.sRev.Set(V.Passed.000053)
+				V.Global.sLoc.Set(V.Passed.000054)
+				V.Global.iRunQty.Set(V.Passed.000007)
+				F.Intrinsic.String.GSSPartString(V.Global.sPart,V.Global.sRev,V.Global.sGSSPart)
+				F.Intrinsic.String.LPad(V.Passed.000060,"0",7,V.Global.sOrderNo)
+				F.Intrinsic.String.LPad(V.Passed.000051,"0",3,V.Global.sOrderLine)
+				F.Intrinsic.Control.CallSub(CheckJob)
+			F.Intrinsic.Control.EndIf
+			
+			F.Intrinsic.Control.CallSub(CheckTable)
+			
+			F.Intrinsic.String.Build("{0}\GAB_4872_JOB.txt",V.Caller.LocalGSSTempDir,V.Global.sJobFile)
+			F.Intrinsic.File.Exists(V.Global.sJobFile,V.Local.bFileExists)
+			F.Intrinsic.Control.If(V.Local.bFileExists)
+				F.Intrinsic.File.DeleteFile(V.Global.sJobFile)
+			F.Intrinsic.Control.EndIf
+			
+			F.Intrinsic.UI.InvokeWaitDialog("Initializing Program....","Calculating Ship Date")
+			F.Intrinsic.UI.ChangeWaitStatus("Check Order Quantity....",10)
+			F.Intrinsic.Control.CallSub(CheckOrderQty)
+			
+			F.Intrinsic.File.Exists(V.Global.sPassedDateFile,V.Local.bFileExists)
+			F.Intrinsic.Control.If(V.Local.bFileExists)
+				F.Intrinsic.File.File2String(V.Global.sPassedDateFile,V.Local.sFile)
+				V.Passed.000011.Set(V.Local.sFile)
+			F.Intrinsic.Control.EndIf
+		
+		'Short Order Form Script 1 Button
+		F.Intrinsic.Control.Case(12440)
+			V.Passed.000162.Set("Calc Ship Date")
+			
+		F.Intrinsic.Control.Case(12620)
+			F.Intrinsic.String.Build("{0}\GAB_4872_NEW_DATE.txt",V.Caller.LocalGSSTempDir,V.Global.sNewDateFile)
+			F.Intrinsic.File.Exists(V.Global.sNewDateFile,V.Local.bFileExists)
+			F.Intrinsic.Control.If(V.Local.bFileExists)
+				F.Intrinsic.File.File2String(V.Global.sNewDateFile,V.Local.sFile)
+				F.Intrinsic.String.Split(V.Local.sFile,"*!*",V.Local.sFile)
+				V.Global.sPart.Set(V.Local.sFile(0))
+				V.Global.sRev.Set(V.Local.sFile(1))
+				V.Global.sLoc.Set(V.Local.sFile(2))
+				V.Global.iRunQty.Set(V.Local.sFile(3))
+				V.Global.sOrderNo.Set(V.Local.sFile(4))
+				V.Global.sOrderLine.Set(V.Local.sFile(5))
+				V.Global.dDate.Set(V.Local.sFile(6))
+				F.Intrinsic.String.GSSPartString(V.Global.sPart,V.Global.sRev,V.Global.sGSSPart)
+			F.Intrinsic.Control.Else
+				V.Global.sType.Set("Order No")
+				F.Intrinsic.Control.If(V.Passed.000071,=,"")
+					V.Global.sMessage.Set("Part Missing. Please enter.")
+				F.Intrinsic.Control.EndIf
+				
+				F.Intrinsic.Control.If(V.Passed.000001,=,".0000")
+					F.Intrinsic.Control.If(V.Global.sMessage,=,"")
+						V.Global.sMessage.Set("Order Qty Missing. Please enter.")
+					F.Intrinsic.Control.Else
+						F.Intrinsic.String.Build("{0}{1}Order Qty Missing. Please enter.",V.Global.sMessage,V.Ambient.NewLine,V.Global.sMessage)
+					F.Intrinsic.Control.EndIf
+				F.Intrinsic.Control.EndIf
+				
+				F.Intrinsic.Control.If(V.Global.sMessage,<>,"")
+					F.Intrinsic.UI.Msgbox(V.Global.sMessage,"Calc Ship Date")
+					F.Intrinsic.Control.End
+				F.Intrinsic.Control.EndIf
+				
+				V.Global.sPart.Set(V.Passed.000071)
+				V.Global.sRev.Set(V.Passed.000072)
+				V.Global.sLoc.Set(V.Passed.000074)
+				V.Global.iRunQty.Set(V.Passed.000001)
+				F.Intrinsic.String.GSSPartString(V.Global.sPart,V.Global.sRev,V.Global.sGSSPart)
+				F.Intrinsic.String.LPad(V.Passed.000005,"0",7,V.Global.sOrderNo)
+				'F.Intrinsic.String.LPad(V.Passed.000051,"0",3,V.Global.sOrderLine)
+				'F.Intrinsic.Control.CallSub(CheckJob)
+			F.Intrinsic.Control.EndIf
+			
+			F.Intrinsic.Control.CallSub(CheckTable)
+			
+			F.Intrinsic.String.Build("{0}\GAB_4872_JOB.txt",V.Caller.LocalGSSTempDir,V.Global.sJobFile)
+			F.Intrinsic.File.Exists(V.Global.sJobFile,V.Local.bFileExists)
+			F.Intrinsic.Control.If(V.Local.bFileExists)
+				F.Intrinsic.File.DeleteFile(V.Global.sJobFile)
+			F.Intrinsic.Control.EndIf
+			
+			F.Intrinsic.UI.InvokeWaitDialog("Initializing Program....","Calculating Ship Date")
+			F.Intrinsic.UI.ChangeWaitStatus("Check Order Quantity....",10)
+			F.Intrinsic.Control.CallSub(CheckOrderQty)
+			
+			F.Intrinsic.File.Exists(V.Global.sPassedDateFile,V.Local.bFileExists)
+			F.Intrinsic.Control.If(V.Local.bFileExists)
+				F.Intrinsic.File.File2String(V.Global.sPassedDateFile,V.Local.sFile)
+				V.Passed.000350.Set(V.Local.sFile)
+			F.Intrinsic.Control.EndIf
+			
+	F.Intrinsic.Control.EndSelect
+	
+	F.Intrinsic.Control.Catch
+		F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}",V.Ambient.ScriptPath,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.End 
+	F.Intrinsic.Control.EndTry
+Program.Sub.Main.End
+
+Program.Sub.CheckTable.Start
+	F.Intrinsic.Control.Try
+	V.Local.sError.Declare
+
+	V.Local.bExists.Declare
+	
+	F.ODBC.Connection!con.OpenCompanyConnection(300)
+	
+	F.ODBC.Connection!con.TableExists("GAB_4872_ORD_TRACK",V.Local.bExists)
+	F.Intrinsic.Control.If(V.Local.bExists,=,False)
+		F.ODBC.Connection!con.Execute("CREATE TABLE GAB_4872_ORD_TRACK(TID IDENTITY,ORDER_NO CHAR(7),ORDER_LINE CHAR(4),GSS_USER CHAR(8),DATE_RUN DATETIME,DATE_POSTED DATE,DATE_CURRENT DATE,UNIQUE(TID));")
+	F.Intrinsic.Control.EndIf
+	
+	F.ODBC.Connection!con.Close
+
+	F.Intrinsic.Control.Catch
+		F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}",V.Ambient.ScriptPath,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.End 
+	F.Intrinsic.Control.EndTry
+Program.Sub.CheckTable.End
+
+Program.Sub.CheckJob.Start
+	F.Intrinsic.Control.Try
+	V.Local.sError.Declare
+
+	V.Local.sSQL.Declare
+	V.Local.sRet.Declare
+	V.Local.sMsg.Declare
+	
+	F.ODBC.Connection!con.OpenCompanyConnection(300)
+	
+	F.Intrinsic.String.Build("Select Job,Suffix From Order_To_WO Where Order_No = '{0}' And Order_Line = '{1}0';",V.Global.sOrderNo,V.Global.sOrderLine,V.Local.sSQL)
+	F.ODBC.Connection!con.ExecuteAndReturn(V.Local.sSQL,V.Local.sRet)
+	F.Intrinsic.Control.If(V.Ambient.ExecuteAndReturnEOF,=,False)
+		F.Intrinsic.String.Split(V.Local.sRet,"*!*",V.Local.sRet)
+		F.Intrinsic.Control.If(V.Local.sRet(1).Trim,=,"")
+			F.Intrinsic.String.Build("Work Order {0} already exists.",V.Local.sRet(0).Trim,V.Local.sMsg)
+		F.Intrinsic.Control.Else
+			F.Intrinsic.String.Build("Work Order {0}-{1} already exists.",V.Local.sRet(0).Trim,V.Local.sRet(1).Trim,V.Local.sMsg)
+		F.Intrinsic.Control.EndIf
+		
+		F.Intrinsic.UI.Msgbox(V.Local.sMsg,"Work Order Exists")
+		F.Intrinsic.Control.End
+	F.Intrinsic.Control.EndIf
+	
+	F.ODBC.Connection!con.Close
+
+	F.Intrinsic.Control.Catch
+		F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}",V.Ambient.ScriptPath,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.End 
+	F.Intrinsic.Control.EndTry
+Program.Sub.CheckJob.End
+
+Program.Sub.CheckOrderQty.Start
+	F.Intrinsic.Control.Try
+	V.Local.sError.Declare
+	
+	V.Local.sSQL.Declare
+	V.Local.fQtyOrder.Declare
+	V.Local.sMSg.Declare
+	
+	F.ODBC.Connection!con.OpenCompanyConnection
+	
+	F.Intrinsic.String.Build("Select * From Order_Booking Where Order_No = '{0}' And Order_Line = '{1}';",V.Global.sOrderNo,V.Global.sOrderLine,V.Local.sSQL)
+	F.Data.DataTable.CreateFromSQL("dtBooking","con",V.Local.sSQL,True)
+	F.Intrinsic.Control.If(V.DataTable.dtBooking.RowCount,=,0)
+		F.Intrinsic.String.Build("Select Qty_Order From Inventory_Mstr Where Part = '{0}' And Location = '{1}';",V.Global.sGSSPart,V.Global.sLoc,V.Local.sSQL)
+		F.ODBC.Connection!con.ExecuteAndReturn(V.Local.sSQL,V.Local.fQtyOrder)
+		F.Intrinsic.Control.If(V.Global.iRunQty,<,V.Local.fQtyOrder)
+			V.Passed.000007.Set(V.Local.fQtyOrder)
+			V.Global.iRunQty.Set(V.Local.fQtyOrder)
+			F.Intrinsic.Control.If(V.Global.sMessage,=,"")
+				F.Intrinsic.String.Build("Order Qty Validation:{0}The minimum order quantity for {1} is {2}. Order Qty will be updated.",V.Ambient.NewLine,V.Global.sGSSPart.Trim,V.Local.fQtyOrder,V.Global.sMessage)
+			F.Intrinsic.Control.Else
+				F.Intrinsic.String.Build("{0}{1}{1}Order Qty Validation:{1}The minimum order quantity for {2} is {3}. Order Qty will be updated.",V.Global.sMessage,V.Ambient.NewLine,V.Global.sGSSPart.Trim,V.Local.fQtyOrder,V.Global.sMessage)
+			F.Intrinsic.Control.EndIf
+		F.Intrinsic.Control.EndIf
+	F.Intrinsic.Control.EndIf
+	F.Data.DataTable.Close("dtBooking")
+	
+	'If Order Qty <= NET, then stop process and prompt message that NET is greater and no WO is needed for this order
+	F.Intrinsic.Control.If(V.Global.bNET)
+		F.Intrinsic.String.Build("Select Part,Location,Qty_OnHand,Qty_OnOrder_PO,Qty_OnOrder_WO,Qty_Required,(Qty_OnHand+Qty_OnOrder_PO+Qty_OnOrder_WO)-Qty_Required As NET From Inventory_Mstr Where Part = '{0}' And Location = '{1}';",V.Global.sGSSPart,V.Global.sLoc,V.Local.sSQL)
+		F.Data.DataTable.CreateFromSQL("dtInvMstr","con",V.Local.sSQL,True)
+		F.Intrinsic.Control.If(V.Global.iRunQty,<=,V.DataTable.dtInvMstr(0).NET!FieldVal)
+			F.Intrinsic.String.Build("The Order Qty is less than or equal to the NET for {1}. No Work Order is needed for this Sales Order Line.{0}{0}Order Qty: {2}{0}NET: {3}",V.Ambient.NewLine,V.Global.sGSSPart.Trim,V.Global.iRunQty,V.DataTable.dtInvMstr(0).NET!FieldVal,V.Local.sMSg)
+			F.Intrinsic.UI.Msgbox(V.Local.sMSg,"Order Qty Validation")
+			F.Data.DataTable.Close("dtInvMstr")
+			'Log that the button was pressed
+			F.Data.DataTable.CreateFromSQL("dtLog","con","Select * From GAB_4872_ORD_TRACK;",True)
+			F.Data.DataTable.AddRow("dtLog","TID",0,"ORDER_NO",V.Global.sOrderNo,"ORDER_LINE",V.Global.sOrderLine,"GSS_USER",V.Caller.User,"DATE_RUN",V.Ambient.Now,"DATE_POSTED",V.Ambient.Now,"DATE_CURRENT",V.Ambient.Now)
+			F.Data.DataTable.SaveToDB("dtLog","con","GAB_4872_ORD_TRACK","TID")
+			F.Data.DataTable.Close("dtLog")
+			F.ODBC.Connection!con.Close
+			F.Intrinsic.Control.End
+		F.Intrinsic.Control.EndIf
+		
+		F.Data.DataTable.Close("dtInvMstr")
+	F.Intrinsic.Control.EndIf
+	
+	F.ODBC.Connection!con.Close
+	
+	F.Intrinsic.UI.ChangeWaitStatus("Check Temporary Files....",20)
+	F.Intrinsic.Control.CallSub(CreateTempFile)
+	
+	F.Intrinsic.Control.Catch
+		F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}",V.Ambient.ScriptPath,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.End 
+	F.Intrinsic.Control.EndTry
+Program.Sub.CheckOrderQty.End
+
+Program.Sub.CreateTempFile.Start
+	F.Intrinsic.Control.Try
+	V.Local.sError.Declare
+	
+	V.Local.bFileExists.Declare
+	V.Local.sFile.Declare
+
+	F.Intrinsic.String.Build("{0}\GAB_4872_SCHED_LOCK.lck",V.Caller.FilesDir,V.Global.sFileLock)
+	F.Intrinsic.File.Exists(V.Global.sFileLock,V.Local.bFileExists)
+	F.Intrinsic.Control.If(V.Local.bFileExists)
+		F.Intrinsic.File.File2String(V.Global.sFileLock,V.Local.sFile)
+		F.Intrinsic.UI.Msgbox(V.Local.sFile,"Forward Schedule Locked")
+		F.Intrinsic.Control.End
+	F.Intrinsic.Control.Else
+		F.Intrinsic.String.Build("User: {1}{0}Date/Time: {2}{0}{3}: {4}",V.Ambient.NewLine,V.Caller.User,V.Ambient.Now,V.Global.sType,V.Global.sOrderNo,V.Local.sFile)
+		F.Intrinsic.File.String2File(V.Global.sFileLock,V.Local.sFile)
+	F.Intrinsic.Control.EndIf
+	
+	F.Intrinsic.UI.ChangeWaitStatus("Check Holidays....",30)
+	F.Intrinsic.Control.CallSub(PullHolidays)
+
+	F.Intrinsic.Control.Catch
+		F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}",V.Ambient.ScriptPath,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.End 
+	F.Intrinsic.Control.EndTry
+Program.Sub.CreateTempFile.End
+
+Program.Sub.PullHolidays.Start
+	F.Intrinsic.Control.Try
+	V.Local.sError.Declare
+	
+	V.Local.iCnt.Declare
+	V.Local.dDefault.Declare
+	
+	V.Local.dDefault.Set(01/01/1900)
+
+	F.ODBC.Connection!con.OpenCompanyConnection(300)
+	
+	F.Data.DataTable.CreateFromSQL("dtHolidays","con","Select * From V_Holiday_Sched",True)
+	F.Intrinsic.Control.If(V.DataTable.dtHolidays.RowCount,<>,0)
+		F.Intrinsic.Control.For(V.Local.iCnt,1,30,1)
+			F.Intrinsic.Control.If(V.DataTable.dtHolidays(0).Holiday_[V.Local.iCnt]!FieldVal,<>,1/1/1900)
+				F.Intrinsic.Control.If(V.Local.iCnt,=,1)
+					V.Global.sHolidays.Set(V.DataTable.dtHolidays(0).Holiday_[V.Local.iCnt]!FieldVal)
+				F.Intrinsic.Control.Else
+					F.Intrinsic.String.Build("{0} {1}",V.Global.sHolidays.FormatM/D/YYYY,V.DataTable.dtHolidays(0).Holiday_[V.Local.iCnt]!FieldVal,V.Global.sHolidays)
+				F.Intrinsic.Control.EndIf
+			F.Intrinsic.Control.EndIf
+		F.Intrinsic.Control.Next(V.Local.iCnt)
+	F.Intrinsic.Control.EndIf
+	
+	F.ODBC.Connection!con.Close
+	
+	F.Intrinsic.Control.If(V.Global.dDate,=,V.Local.dDefault)
+		F.Intrinsic.Date.DateAdd("D",1,V.Ambient.Date,V.Global.dDate)
+	F.Intrinsic.Control.EndIf
+	F.Intrinsic.UI.ChangeWaitStatus("Scheduling Temporary WO....",40)
+	F.Intrinsic.Control.CallSub(ScheduleTempWO)
+	
+	F.Intrinsic.Control.Catch
+		F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}",V.Ambient.ScriptPath,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.End 
+	F.Intrinsic.Control.EndTry
+Program.Sub.PullHolidays.End
+
+Program.Sub.ScheduleTempWO.Start
+	F.Intrinsic.Control.Try
+	V.Local.sError.Declare
+
+	V.Local.sFile.Declare
+	V.Local.sData.Declare
+	V.Local.sRet.Declare
+	
+	F.Intrinsic.String.Build("{0}\WO_4872.txt",V.Caller.LocalGSSTempDir,V.Local.sFile)
+	F.Intrinsic.String.Build("{0}*!*{1}*!*{2}*!*{3}*!*{4}*!*T*!*###001",V.Global.sPart,V.Global.sRev,V.Global.sLoc,V.Global.dDate.FormatMM/DD/YYYY,V.Global.iRunQty,V.Local.sData)
+	F.Intrinsic.File.String2File(V.Local.sFile,V.Local.sData)
+	
+	F.Global.Callwrapper.New("SchedWO","Manufacturing.CreateWorkOrderFinishedGoodPart")
+	F.Global.Callwrapper.SetProperty("SchedWO","FileName",V.Local.sFile)
+	F.Global.CallWrapper.Run("SchedWO")
+	F.Global.CallWrapper.GetProperty("SchedWO","ReturnCode",V.Local.sRet)
+	
+	F.Intrinsic.UI.ChangeWaitStatus("Analyzing Requirements....",50)
+	F.Intrinsic.Control.CallSub(CheckDates)
+
+	F.Intrinsic.Control.Catch
+		F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}",V.Ambient.ScriptPath,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.End 
+	F.Intrinsic.Control.EndTry
+Program.Sub.ScheduleTempWO.End
+
+Program.Sub.CheckDates.Start
+	F.Intrinsic.Control.Try
+	V.Local.sError.Declare
+	
+	V.Local.sSQL.Declare
+	V.Local.iCnt.Declare
+	V.Local.iCnt2.Declare
+	V.Local.dLeadDate.Declare
+	V.Local.dMaxDate.Declare
+	V.Local.dWOMaxDate.Declare
+	V.Local.bHoliday.Declare
+	V.Local.fSUM.Declare
+	V.Local.fDiff.Declare
+	V.Local.sSelect.Declare
+	V.Local.dDefault.Declare
+	V.Local.sData.Declare
+	V.Local.bFileExists.Declare
+	V.Local.sExp.Declare
+	V.Local.fQtyOnHand.Declare
+	V.Local.sPart.Declare
+	V.Local.sLoc.Declare
+	V.Local.sJob.Declare
+	V.Local.sSfx.Declare
+	V.Local.sRet.Declare
+	V.Local.sFilter.Declare
+	V.Local.dCurDate.Declare
+	V.Local.dDate.Declare
+	
+	V.Local.dDefault.Set(01/01/1900)
+	V.Local.dCurDate.Set(01/01/1900)
+	
+	F.ODBC.Connection!con.OpenCompanyConnection(300)
+	
+	F.Intrinsic.Control.If(V.DataTable.dtWO.Exists)
+		F.Data.DataTable.Close("dtWO")
+		F.Data.DataTable.Close("dtParts")
+	F.Intrinsic.Control.EndIf
+	
+	F.Data.DataTable.CreateFromSQL("dtWO","con","Select A.Job,A.Suffix,A.Seq,A.LMO,RTrim(A.Part) As Part,RTrim(B.Location) As Location,C.Qty_OnHand,C.Qty_Required,C.Qty_OnHand-C.Qty_Required As Requirements2,A.Hours_Estimated,A.Date_Start,A.Date_Due,RTrim(D.Code_Source) As Code_Source,C.Time_Material_Lead,C.Qty_OnOrder_PO,C.Qty_OnOrder_WO From V_Job_Operations A Join V_Job_Header B On A.Job = B.Job And A.Suffix = B.Suffix Left Join V_Inventory_Mstr C On A.Part = C.Part And B.Location = C.Location Left Join V_Inventory_Mst2 D On A.Part = D.Part And B.Location = D.Location Where A.Job = '###001' And A.LMO <> 'C' And A.Seq < '994999' Order By A.Job,A.Suffix,A.Seq;",True)
+	F.Data.DataTable.AddExpressionColumn("dtWO","Requirements",Float,"Qty_OnHand-Qty_Required")
+	'Populate Qty On Hand
+	F.Data.DataView.Create("dtWO","dvMRP",22,"LMO = 'M' And Code_Source In ('P','J','M')","")
+	F.Data.DataView.ToDataTableDistinct("dtWO","dvMRP","dtMRP","Part*!*Location*!*Qty_OnHand",True)
+	F.Data.DataView.Close("dtWO","dvMRP")
+	F.Intrinsic.Control.For(V.Local.iCnt,0,V.DataTable.dtMRP.RowCount--,1)
+		F.Intrinsic.String.Replace(V.DataTable.dtMRP(V.Local.iCnt).Part!FieldValTrim,"'","''",V.Local.sPart)
+		F.Intrinsic.String.Replace(V.DataTable.dtMRP(V.Local.iCnt).Location!FieldValTrim,"'","''",V.Local.sLoc)
+		F.Intrinsic.String.Build("Part = '{0}' And Location = '{1}'",V.Local.sPart,V.Local.sLoc,V.Local.sExp)
+		F.Data.DataTable.Select("dtWO",V.Local.sExp,V.Local.sSelect)
+		F.Intrinsic.Control.If(V.Local.sSelect,<>,"***NORETURN***")
+			F.Intrinsic.String.Split(V.Local.sSelect,"*!*",V.Local.sSelect)
+			F.Intrinsic.String.SortDesc(V.Local.sSelect,V.Local.sSelect)
+			V.Local.fQtyOnHand.Set(V.DataTable.dtMRP(V.Local.iCnt).Qty_OnHand!FieldVal)
+			F.Intrinsic.Control.For(V.Local.iCnt2,0,V.Local.sSelect.UBound,1)
+				F.Data.DataTable.SetValue("dtWO",V.Local.sSelect(V.Local.iCnt2).Long,"Qty_OnHand",V.Local.fQtyOnHand)
+				F.Intrinsic.Math.Sub(V.Local.fQtyOnHand,V.DataTable.dtWO(V.Local.sSelect(V.Local.iCnt2).Long).Hours_Estimated!FieldVal,V.Local.fQtyOnHand)
+			F.Intrinsic.Control.Next(V.Local.iCnt2)
+		F.Intrinsic.Control.EndIf
+	F.Intrinsic.Control.Next(V.Local.iCnt)
+	F.Data.DataTable.Close("dtMRP")
+	
+	'Check Dates and requirements
+	F.Data.DataView.Create("dtWO","dvWO",22,"LMO = 'M' And Code_Source In ('P','J','M')","")
+	f.Data.DataView.ToDataTable("dtWO","dvWO","dtParts",True)
+	F.Data.DataTable.AddColumn("dtParts","New_Due_Date",Date)
+	F.Intrinsic.Control.If(V.DataTable.dtParts.RowCount,<>,0)
+		F.Intrinsic.Control.For(V.Local.iCnt,0,V.DataTable.dtParts.RowCount--,1)
+			F.Intrinsic.Control.If(V.DataTable.dtParts(V.Local.iCnt).Requirements!FieldVal,<,V.DataTable.dtParts(V.Local.iCnt).Hours_Estimated!FieldVal)
+				F.Intrinsic.Date.DateAddWorkdays(V.Ambient.Date,V.DataTable.dtParts(V.Local.iCnt).Time_Material_Lead!FieldVal,V.Local.dLeadDate)
+				F.Intrinsic.String.IsInString(V.Global.sHolidays,V.Local.dLeadDate.String,True,V.Local.bHoliday)
+				F.Intrinsic.Control.DoUntil(V.Local.bHoliday,=,False)
+					F.Intrinsic.Date.DateAddWorkdays(V.Local.dLeadDate,1,V.Local.dLeadDate)
+					F.Intrinsic.String.IsInString(V.Global.sHolidays,V.Local.dLeadDate,True,V.Local.bHoliday)
+				F.Intrinsic.Control.Loop
+				F.Intrinsic.Control.If(V.Local.dLeadDate,>,V.DataTable.dtParts(V.Local.iCnt).Date_Due!FieldVal)
+					F.Intrinsic.Control.SelectCase(V.DataTable.dtParts(V.Local.iCnt).Code_Source!FieldVal)
+						F.Intrinsic.Control.CaseAny("P","J")
+							F.Intrinsic.String.Build("Select Date_Due As Date_Due,Qty_Committed-Qty_Issued As Requirements,'Demand' As Type From V_Job_Commitments Where Part = '{0}' And Location = '{1}' And Date_Due <= '{2}' Union Select Date_Due_Line As Date_Due,If(Qty_Received > Qty_Order,0,(Qty_Order-Qty_Received)*-1) As Supply,'Supply' As Type From V_PO_Lines A Join V_PO_Header B On A.Purchase_Order = B.Purchase_Order Where A.Part = '{0}' And A.Location = '{1}' And B.Flag_Recv_Closed <> 'Y' And A.Flag_Recv_Close <> 'Y' And Supply <> 0 And B.Type <> 1 And Date_Due <= '{2}' Order By Date_Due;",V.DataTable.dtParts(V.Local.iCnt).Part!FieldVal,V.DataTable.dtParts(V.Local.iCnt).Location!FieldVal,V.DataTable.dtParts(V.Local.iCnt).Date_Due!FieldValPervasiveDate,V.Local.sSQL)
+							F.Data.DataTable.CreateFromSQL("dtPurch","con",V.Local.sSQL,True)
+							F.Data.DataTable.Compute("dtPurch","SUM(Requirements)","",V.Local.fSUM)
+							F.Intrinsic.Math.Sub(V.DataTable.dtParts(V.Local.iCnt).Qty_OnHand!FieldVal,V.Local.fSUM,V.Local.fDiff)
+							F.Intrinsic.Control.If(V.Local.fDiff,<,V.DataTable.dtParts(V.Local.iCnt).Hours_Estimated!FieldVal)
+								F.Data.DataTable.Select("dtPurch","Type = 'Supply'",V.Local.sSelect)
+								F.Intrinsic.Control.If(V.Local.sSelect,=,"***NORETURN***")
+									F.Data.DataTable.SetValue("dtParts",V.Local.iCnt,"New_Due_Date",V.Local.dLeadDate)
+								F.Intrinsic.Control.Else
+									F.Data.DataTable.Compute("dtPurch","MAX(Date_Due)","Type = 'Supply'",V.Local.dMaxDate)
+									F.Data.DataTable.SetValue("dtParts",V.Local.iCnt,"New_Due_Date",V.Local.dMaxDate)
+								F.Intrinsic.Control.EndIf
+							F.Intrinsic.Control.EndIf
+							F.Data.DataTable.Close("dtPurch")
+						F.Intrinsic.Control.Case("M")
+							F.Intrinsic.String.Build("Select Date_Due As Date_Due,Qty_Committed-Qty_Issued As Requirements,'Demand' As Type From V_Job_Commitments Where Part = '{0}' And Location = '{1}' Union Select Date_Due As Date_Due,(Qty_Order-Qty_Completed)*-1 As Supply,'Supply' As Type From V_Job_Header Where Part = '{0}' And Location = '{1}' And Date_Closed = '1900-01-01' Order By Date_Due;",V.DataTable.dtParts(V.Local.iCnt).Part!FieldVal,V.DataTable.dtParts(V.Local.iCnt).Location!FieldVal,V.Local.sSQL)
+							F.Data.DataTable.CreateFromSQL("dtManuf","con",V.Local.sSQL,True)
+							F.Data.DataTable.Compute("dtManuf","SUM(Requirements)","",V.Local.fSUM)
+							F.Intrinsic.Math.Sub(V.DataTable.dtParts(V.Local.iCnt).Qty_OnHand!FieldVal,V.Local.fSUM,V.Local.fDiff)
+							F.Intrinsic.Control.If(V.Local.fDiff,<,V.DataTable.dtParts(V.Local.iCnt).Hours_Estimated!FieldVal)
+								F.Data.DataTable.Select("dtManuf","Type =  'Supply'",V.Local.sSelect)
+								F.Intrinsic.Control.If(V.Local.sSelect,=,"***NORETURN***")
+									F.Data.DataTable.SetValue("dtParts",V.Local.iCnt,"New_Due_Date",V.Local.dLeadDate)
+								F.Intrinsic.Control.Else
+									F.Data.DataTable.Compute("dtManuf","MAX(Date_Due)","Type = 'Supply'",V.Local.dMaxDate)
+									F.Data.DataTable.SetValue("dtParts",V.Local.iCnt,"New_Due_Date",V.Local.dMaxDate)
+								F.Intrinsic.Control.EndIf
+							F.Intrinsic.Control.EndIf
+							F.Data.DataTable.Close("dtManuf")
+					F.Intrinsic.Control.EndSelect
+				F.Intrinsic.Control.EndIf
+			F.Intrinsic.Control.EndIf
+		F.Intrinsic.Control.Next(V.Local.iCnt)
+	F.Intrinsic.Control.EndIf
+	
+	F.Data.DataTable.Select("dtParts","New_Due_Date Is Not Null",V.Local.sSelect)
+	F.Intrinsic.Control.If(V.Local.sSelect,<>,"***NORETURN***")
+		F.Data.DataTable.Compute("dtParts","MAX(New_Due_Date)","",V.Local.dMaxDate)
+		F.Intrinsic.String.Build("New_Due_Date = '{0}'",V.Local.dMaxDate,V.Local.sFilter)
+		F.Data.DataTable.Select("dtParts",V.Local.sFilter,V.Local.sSelect)
+		F.Intrinsic.String.Split(V.Local.sSelect,"*!*",V.Local.sSelect)
+		'Set Job and Suffix-----------------------------------------------------------------------------------
+		V.Local.sJob.Set(V.DataTable.dtParts(V.Local.sSelect(V.Local.sSelect.UBound)).Job!FieldValTrim)
+		V.Local.sSfx.Set(V.DataTable.dtParts(V.Local.sSelect(V.Local.sSelect.UBound)).Suffix!FieldValTrim)
+		F.Intrinsic.String.Build("{0}*!*{1}",V.Local.sJob,V.Local.sSfx,V.Local.sJob)
+		F.Intrinsic.File.String2File(V.Global.sJobFile,V.Local.sJob)
+		'-----------------------------------------------------------------------------------------------------
+		F.Intrinsic.Date.DateAddWorkdays(V.Local.dMaxDate,1,V.Local.dMaxDate)
+		F.Intrinsic.String.IsInString(V.Global.sHolidays,V.Local.dMaxDate.String,True,V.Local.bHoliday)
+		F.Intrinsic.Control.DoUntil(V.Local.bHoliday,=,False)
+			F.Intrinsic.Date.DateAddWorkdays(V.Local.dMaxDate,1,V.Local.dMaxDate)
+			F.Intrinsic.String.IsInString(V.Global.sHolidays,V.Local.dMaxDate,True,V.Local.bHoliday)
+		F.Intrinsic.Control.Loop
+		F.Intrinsic.File.Exists(V.Global.sNewDateFile,V.Local.bFileExists)
+		F.Intrinsic.Control.If(V.Local.bFileExists)
+			F.Intrinsic.File.DeleteFile(V.Global.sNewDateFile)
+		F.Intrinsic.Control.EndIf
+		F.Intrinsic.String.Build("{0}*!*{1}*!*{2}*!*{3}*!*{4}*!*{5}*!*{6}",V.Global.sPart,V.Global.sRev,V.Global.sLoc,V.Global.iRunQty,V.Global.sOrderNo,V.Global.sOrderLine,V.Local.dMaxDate.FormatMM/DD/YYYY,V.Local.sData)
+		F.Intrinsic.File.String2File(V.Global.sNewDateFile,V.Local.sData)
+	F.Intrinsic.Control.Else
+		F.Data.DataTable.Compute("dtWO","MAX(Date_Due)","",V.Local.dWOMaxDate)
+		F.Data.DataTable.Compute("dtParts","MAX(New_Due_Date)","",V.Local.dMaxDate)
+		F.Intrinsic.Control.If(V.Local.dWOMaxDate,>,V.Local.dMaxDate)
+			V.Local.dMaxDate.Set(V.Local.dWOMaxDate)
+		F.Intrinsic.Control.EndIf
+		
+		F.Intrinsic.File.Exists(V.Global.sNewDateFile,V.Local.bFileExists)
+		F.Intrinsic.Control.If(V.Local.bFileExists)
+			F.Intrinsic.File.String2File(V.Global.sMaxDateFile,V.Local.dMaxDate)
+			F.Intrinsic.File.DeleteFile(V.Global.sNewDateFile)
+			F.Intrinsic.File.String2File(V.Global.sJobFile,"###001*!*000")
+			Gui.frmMsg.dtpShipDate.Value(V.Local.dMaxDate)
+			F.Intrinsic.Control.If(V.Caller.Hook,<>,12620)
+				F.Intrinsic.Date.ConvertDString(V.Passed.000011,"YYYYMMDD",V.Local.dCurDate)
+			F.Intrinsic.Control.Else
+				F.Intrinsic.Date.ConvertDString(V.Passed.000350,"YYYYMMDD",V.Local.dCurDate)
+			F.Intrinsic.Control.EndIf
+			Gui.frmMsg.dtpShipDate2.Value(V.Local.dCurDate)
+			F.Intrinsic.Control.If(V.Local.dMaxDate,>=,V.Local.dCurDate)
+				Gui.frmMsg.optShipDate.Value(1)
+			F.Intrinsic.Control.Else
+				Gui.frmMsg.optShipDate2.Value(1)
+			F.Intrinsic.Control.EndIf
+			F.Intrinsic.Control.CallSub(LogCalcShipDate,"MaxDate",V.Local.dMaxDate,"CurDate",V.Local.dCurDate)
+			F.Intrinsic.Control.CallSub(LoadShipDateParts,"MaxDate",V.Local.dMaxDate)
+			Gui.frmMsg..Show
+			Gui.frmMsg..WaitForDismiss
+			F.Intrinsic.Control.If(V.Screen.frmMsg!optShipDate.Value)
+				F.Intrinsic.Control.If(V.Caller.Hook,<>,12620)
+					V.Passed.000011.Set(V.Local.dMaxDate.FormatYYYYMMDD)
+				F.Intrinsic.Control.Else
+					V.Passed.000350.Set(V.Local.dMaxDate.FormatYYYYMMDD)
+				F.Intrinsic.Control.EndIf
+				F.Intrinsic.File.String2File(V.Global.sPassedDateFile,V.Local.dMaxDate.FormatYYYYMMDD)
+			F.Intrinsic.Control.Else
+				F.Intrinsic.Control.If(V.Caller.Hook,<>,12620)
+					V.Passed.000011.Set(V.Local.dCurDate.FormatYYYYMMDD)
+				F.Intrinsic.Control.Else
+					V.Passed.000350.Set(V.Local.dCurDate.FormatYYYYMMDD)
+				F.Intrinsic.Control.EndIf
+				F.Intrinsic.File.String2File(V.Global.sPassedDateFile,V.Local.dCurDate.FormatYYYYMMDD)
+			F.Intrinsic.Control.EndIf
+		F.Intrinsic.Control.Else
+			F.Intrinsic.Date.DateAddWorkdays(V.Local.dMaxDate,1,V.Local.dMaxDate)
+			Gui.frmMsg.dtpShipDate.Value(V.Local.dMaxDate)
+			F.Intrinsic.Control.If(V.Caller.Hook,<>,12620)
+				F.Intrinsic.Date.ConvertDString(V.Passed.000011,"YYYYMMDD",V.Local.dCurDate)
+			F.Intrinsic.Control.Else
+				F.Intrinsic.Date.ConvertDString(V.Passed.000350,"YYYYMMDD",V.Local.dCurDate)
+			F.Intrinsic.Control.EndIf
+			Gui.frmMsg.dtpShipDate2.Value(V.Local.dCurDate)
+			F.Intrinsic.Control.If(V.Local.dMaxDate,>=,V.Local.dCurDate)
+				Gui.frmMsg.optShipDate.Value(1)
+			F.Intrinsic.Control.Else
+				Gui.frmMsg.optShipDate2.Value(1)
+			F.Intrinsic.Control.EndIf
+			F.Intrinsic.Control.CallSub(LogCalcShipDate,"MaxDate",V.Local.dMaxDate,"CurDate",V.Local.dCurDate)
+			F.Intrinsic.Control.CallSub(LoadShipDateParts,"MaxDate",V.Local.dMaxDate)
+			Gui.frmMsg..Show
+			Gui.frmMsg..WaitForDismiss
+			F.Intrinsic.Control.If(V.Screen.frmMsg!optShipDate.Value)
+				F.Intrinsic.Control.If(V.Caller.Hook,<>,12620)
+					V.Passed.000011.Set(V.Local.dMaxDate.FormatYYYYMMDD)
+				F.Intrinsic.Control.Else
+					V.Passed.000350.Set(V.Local.dMaxDate.FormatYYYYMMDD)
+				F.Intrinsic.Control.EndIf
+				F.Intrinsic.File.String2File(V.Global.sPassedDateFile,V.Local.dMaxDate.FormatYYYYMMDD)
+			F.Intrinsic.Control.Else
+				F.Intrinsic.Control.If(V.Caller.Hook,<>,12620)
+					V.Passed.000011.Set(V.Local.dCurDate.FormatYYYYMMDD)
+				F.Intrinsic.Control.Else
+					V.Passed.000350.Set(V.Local.dCurDate.FormatYYYYMMDD)
+				F.Intrinsic.Control.EndIf
+				F.Intrinsic.File.String2File(V.Global.sPassedDateFile,V.Local.dCurDate.FormatYYYYMMDD)
+			F.Intrinsic.Control.EndIf
+'			V.Passed.000086.Set("CALCULATED")
+		F.Intrinsic.Control.EndIf
+	F.Intrinsic.Control.EndIf
+	
+	F.ODBC.Connection!con.Close
+	
+	F.Intrinsic.UI.ChangeWaitStatus("Remove Temporary Files....",60)
+	F.Intrinsic.Control.CallSub(RemoveTempFile)
+
+	F.Intrinsic.Control.Catch
+		F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}",V.Ambient.ScriptPath,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.End 
+	F.Intrinsic.Control.EndTry
+Program.Sub.CheckDates.End
+
+Program.Sub.DeleteTempWO.Start
+	F.Intrinsic.Control.Try
+	V.Local.sError.Declare
+	
+	V.Local.sSQL.Declare
+	V.Local.iCnt.Declare
+	
+	F.ODBC.Connection!con.OpenCompanyConnection(500)
+	
+	'Update Inventory_Mstr.Qty_OnOrder_WO
+	F.Data.DataTable.CreateFromSQL("dtDeleteTempWO","con","Select Job,Suffix,Part,Location,Qty_Order From Job_Header Where Job = '###001' Order By Job,Suffix;",True)
+	F.Intrinsic.Control.For(V.Local.iCnt,0,V.DataTable.dtDeleteTempWO.RowCount--)
+		F.Intrinsic.String.Build("Update Inventory_Mstr Set Qty_OnOrder_WO = Qty_OnOrder_WO-{0} Where Part = '{1}' And Location = '{2}';",V.DataTable.dtDeleteTempWO(V.Local.iCnt).Qty_Order!FieldVal,V.DataTable.dtDeleteTempWO(V.Local.iCnt).Part!FieldVal,V.DataTable.dtDeleteTempWO(V.Local.iCnt).Location!FieldVal,V.Local.sSQL)
+		F.ODBC.Connection!con.Execute(V.Local.sSQL)
+	F.Intrinsic.Control.Next(V.Local.iCnt)
+	
+	F.ODBC.Connection!con.Execute("Delete From Job_Header Where Job = '###001';")
+	F.ODBC.Connection!con.Execute("Delete From Job_Operations Where Job = '###001';")
+	F.ODBC.Connection!con.Execute("Delete From Job_Commitments Where Job = '###001';")
+	F.ODBC.Connection!con.Execute("Delete From APSV3_JBMASTER Where Job = '###001';")
+	F.ODBC.Connection!con.Execute("Delete From APSV3_JBLINES Where Job = '###001';")
+	F.ODBC.Connection!con.Execute("Delete From APSV3_UBDETAIL Where Job = '###001';")
+	
+	F.ODBC.Connection!con.Close
+	
+	F.Intrinsic.Control.Catch
+		F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}",V.Ambient.ScriptPath,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.End 
+	F.Intrinsic.Control.EndTry
+Program.Sub.DeleteTempWO.End
+
+Program.Sub.RemoveTempFile.Start
+	F.Intrinsic.Control.Try
+	V.Local.sError.Declare
+	
+	V.Local.bFileExists.Declare
+	V.Local.sGAB.Declare
+	V.Local.dMaxDate.Declare
+	V.Local.sSQL.Declare
+	V.Local.dRet.Declare
+	V.Local.iDays.Declare
+	V.Local.sRet.Declare
+	V.Local.sJob.Declare
+	V.Local.sSfx.Declare
+	V.Local.dCurDate.Declare
+	
+	V.Local.dCurDate.Set(01/01/1900)
+	
+	F.Intrinsic.File.DeleteFile(V.Global.sFileLock)
+	
+	F.Intrinsic.UI.ChangeWaitStatus("Complete....",100)
+	F.Intrinsic.UI.CloseWaitDialog
+	
+	F.Intrinsic.File.Exists(V.Global.sNewDateFile,V.Local.bFileExists)
+	F.Intrinsic.Control.If(V.Local.bFileExists)
+		F.Data.DataTable.SaveToXML("dtParts",0,True,V.Global.sdtPartXML)
+		F.Intrinsic.String.Build("{0}\GAB_4872_Ship_Date_Calc.g2u",V.Caller.GasDir,V.Local.sGAB)
+		F.Intrinsic.UI.ChangeWaitStatus("Remove Temporary WO....",80)
+		F.Intrinsic.Control.CallSub(DeleteTempWO)
+		F.Global.General.CallSyncGAS(V.Local.sGAB,V.Global.iPID)
+		V.Global.iPID.Set(15)
+	F.Intrinsic.Control.EndIf
+	
+	F.Intrinsic.File.Exists(V.Global.sMaxDateFile,V.Local.bFileExists)
+	F.Intrinsic.Control.If(V.Local.bFileExists)
+		F.Intrinsic.Control.If(V.Global.iPID,=,15)
+			F.Intrinsic.File.File2String(V.Global.sMaxDateFile,V.Local.dMaxDate)
+			F.Intrinsic.File.File2String(V.Global.sJobFile,V.Local.sRet)
+			F.Intrinsic.String.Split(V.Local.sRet,"*!*",V.Local.sRet)
+			V.Local.sJob.Set(V.Local.sRet(0))
+			V.Local.sSfx.Set(V.Local.sRet(1))
+			F.ODBC.Connection!con.OpenCompanyConnection(300)
+			F.Intrinsic.String.Build("Select SCHEDSTART From APSV3_JBMASTER Where Job = '{0}' And Sfx = '{1}';",V.Local.sJob,V.Local.sSfx,V.Local.sSQL)
+			F.ODBC.Connection!con.ExecuteAndReturn(V.Local.sSQL,V.Local.dRet)
+			F.ODBC.Connection!con.Close
+			F.Intrinsic.Control.If(V.Local.dMaxDate,<,V.Local.dRet)
+				V.Local.dMaxDate.Set(V.Local.dRet)
+			F.Intrinsic.Control.EndIf
+'			F.Intrinsic.Date.DateDiff("D",V.Local.dRet,V.Ambient.Date,V.Local.iDays)
+			F.Intrinsic.Date.WorkdaysBetweenDates(V.Local.dRet,V.Ambient.Date,V.Local.iDays)
+			F.Intrinsic.Math.Abs(V.Local.iDays,V.Local.iDays)
+'			F.Intrinsic.Math.Sub(V.Local.iDays,2,V.Local.iDays)
+			F.Intrinsic.Date.DateSubtractWorkdays(V.Local.dMaxDate,V.Local.iDays,V.Local.dMaxDate)
+			'-------------------------------------------------------------------------------------
+			F.Intrinsic.Date.DateAddWorkdays(V.Local.dMaxDate,1,V.Local.dMaxDate)
+			Gui.frmMsg.dtpShipDate.Value(V.Local.dMaxDate)
+			F.Intrinsic.Control.If(V.Caller.Hook,<>,12620)
+				F.Intrinsic.Date.ConvertDString(V.Passed.000011,"YYYYMMDD",V.Local.dCurDate)
+			F.Intrinsic.Control.Else
+				F.Intrinsic.Date.ConvertDString(V.Passed.000350,"YYYYMMDD",V.Local.dCurDate)
+			F.Intrinsic.Control.EndIf
+			Gui.frmMsg.dtpShipDate2.Value(V.Local.dCurDate)
+			
+			F.Intrinsic.Control.If(V.Local.dMaxDate,>=,V.Local.dCurDate)
+				Gui.frmMsg.optShipDate.Value(1)
+			F.Intrinsic.Control.Else
+				Gui.frmMsg.optShipDate2.Value(1)
+			F.Intrinsic.Control.EndIf
+			F.ODBC.Connection!con.OpenCompanyConnection(300)
+			F.Intrinsic.Control.CallSub(LogCalcShipDate,"MaxDate",V.Local.dMaxDate,"CurDate",V.Local.dCurDate)
+			F.ODBC.Connection!con.Close
+			F.Intrinsic.Control.CallSub(LoadShipDateParts,"MaxDate",V.Local.dMaxDate)
+			Gui.frmMsg..Show
+			Gui.frmMsg..WaitForDismiss
+			F.Intrinsic.Control.If(V.Screen.frmMsg!optShipDate.Value)
+				F.Intrinsic.Control.If(V.Caller.Hook,<>,12620)
+					V.Passed.000011.Set(V.Local.dMaxDate.FormatYYYYMMDD)
+				F.Intrinsic.Control.Else
+					V.Passed.000350.Set(V.Local.dMaxDate.FormatYYYYMMDD)
+				F.Intrinsic.Control.EndIf
+				F.Intrinsic.File.String2File(V.Global.sPassedDateFile,V.Local.dMaxDate.FormatYYYYMMDD)
+			F.Intrinsic.Control.Else
+				F.Intrinsic.Control.If(V.Caller.Hook,<>,12620)
+					V.Passed.000011.Set(V.Local.dCurDate.FormatYYYYMMDD)
+				F.Intrinsic.Control.Else
+					V.Passed.000350.Set(V.Local.dCurDate.FormatYYYYMMDD)
+				F.Intrinsic.Control.EndIf
+				F.Intrinsic.File.String2File(V.Global.sPassedDateFile,V.Local.dCurDate.FormatYYYYMMDD)
+			F.Intrinsic.Control.EndIf
+'			V.Passed.000086.Set("CALCULATED")
+			F.Intrinsic.UI.ChangeWaitStatus("Remove Temporary WO....",80)
+			F.Intrinsic.Control.CallSub(DeleteTempWO)
+			F.Intrinsic.File.DeleteFile(V.Global.sdtPartXML)
+		F.Intrinsic.Control.EndIf
+	F.Intrinsic.Control.EndIf
+	
+	F.Intrinsic.Control.CallSub(DeleteTempWO)
+	
+	F.Intrinsic.Control.CatchWhen(800)
+	F.Intrinsic.Control.Catch
+		F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}",V.Ambient.ScriptPath,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.End 
+	F.Intrinsic.Control.EndTry
+Program.Sub.RemoveTempFile.End
+
+Program.Sub.frmMsg_UnLoad.Start
+	F.Intrinsic.Control.Try
+	V.Local.sError.Declare
+
+	Gui.frmMsg..Visible(False)
+
+	F.Intrinsic.Control.Catch
+		F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}",V.Ambient.ScriptPath,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.End 
+	F.Intrinsic.Control.EndTry
+Program.Sub.frmMsg_UnLoad.End
+
+Program.Sub.LoadShipDateParts.Start
+	F.Intrinsic.Control.Try
+	V.Local.sError.Declare
+	
+	V.Local.sColumnColor.Declare
+	V.Local.dMaxPartDate.Declare
+	V.Local.sSelect.Declare
+	
+	F.Intrinsic.Control.CallSub(SetContextMenu)
+
+	F.Intrinsic.Control.If(V.DataTable.dtParts.Exists,=,False)
+		F.Data.DataTable.CreateFromXML("dtParts",V.Global.sdtPartXML,True)
+	F.Intrinsic.Control.EndIf
+	
+	Gui.frmMsg.GsGCParts.AddGridviewFromDatatable("gvParts","dtParts")
+	Gui.frmMsg.GsGCParts.SuspendLayout()
+	Gui.frmMsg.GsGCParts.SetGridViewProperty("gvParts","MultiSelect",True)
+	Gui.frmMsg.GsGCParts.SetGridViewProperty("gvParts","Editable",False)
+	Gui.frmMsg.GsGCParts.SetGridViewProperty("gvParts","ReadOnly",True)
+	Gui.frmMsg.GsGCParts.SetGridViewProperty("gvParts","AllowSort",True)
+	Gui.frmMsg.GsGCParts.SetGridViewProperty("gvParts","AllowFilter",False)
+	Gui.frmMsg.GsGCParts.SetGridViewProperty("gvParts","ShowGroupPanel",False)
+	
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Job","Visible",False)
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Suffix","Visible",False)
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Seq","Visible",False)
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","LMO","Visible",False)
+'	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Part","Visible",False)
+'	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Location","Visible",False)
+'	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Qty_OnHand","Visible",False)
+'	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Requirements","Visible",False)
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Qty_Required","Visible",False)
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Requirements2","Visible",False)
+'	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Hours_Estimated","Visible",False)
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Date_Start","Visible",False)
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Date_Due","Visible",False)
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Code_Source","Visible",False)
+'	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Time_Material_Lead","Visible",False)
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Qty_OnOrder_PO","Visible",False)
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Qty_OnOrder_WO","Visible",False)
+'	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","New_Due_Date","Visible",False)
+	
+	F.Data.DataTable.Select("dtParts","New_Due_Date Is Not Null",V.Local.sSelect)
+	F.Intrinsic.Control.If(V.Local.sSelect,=,"***NORETURN***")
+		Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","New_Due_Date","Visible",False)
+	F.Intrinsic.Control.EndIf
+
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Job","Caption","Job")
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Suffix","Caption","Suffix")
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Seq","Caption","Seq")
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","LMO","Caption","Lmo")
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Part","Caption","Part")
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Location","Caption","Loc")
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Qty_OnHand","Caption","Qty On Hand")
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Requirements","Caption","Net Avail")
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Hours_Estimated","Caption","Est Req")
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Date_Start","Caption","Start Date")
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Date_Due","Caption","Due Date")
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Code_Source","Caption","Source")
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Time_Material_Lead","Caption","Lead Time")
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Qty_OnOrder_PO","Caption","Qty On Order PO")
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Qty_OnOrder_WO","Caption","Qty On Order WO")
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","New_Due_Date","Caption","Due Date")
+	
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Job","MinWidth","65")
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Suffix","MinWidth","65")
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Seq","MinWidth","65")
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","LMO","MinWidth","65")
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Part","MinWidth","65")
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Location","MinWidth","65")
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Qty_OnHand","MinWidth","78")
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Requirements","MinWidth","65")
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Hours_Estimated","MinWidth","65")
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Date_Start","MinWidth","65")
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Date_Due","MinWidth","65")
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Code_Source","MinWidth","65")
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Time_Material_Lead","MinWidth","65")
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Qty_OnOrder_PO","MinWidth","65")
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Qty_OnOrder_WO","MinWidth","65")
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","New_Due_Date","MinWidth","65")
+
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Job","HeaderFontBold",True)
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Suffix","HeaderFontBold",True)
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Seq","HeaderFontBold",True)
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","LMO","HeaderFontBold",True)
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Part","HeaderFontBold",True)
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Location","HeaderFontBold",True)
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Qty_OnHand","HeaderFontBold",True)
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Requirements","HeaderFontBold",True)
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Hours_Estimated","HeaderFontBold",True)
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Date_Start","HeaderFontBold",True)
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Date_Due","HeaderFontBold",True)
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Code_Source","HeaderFontBold",True)
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Time_Material_Lead","HeaderFontBold",True)
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Qty_OnOrder_PO","HeaderFontBold",True)
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Qty_OnOrder_WO","HeaderFontBold",True)
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","New_Due_Date","HeaderFontBold",True)
+	
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Job","HeaderHAlignment","Center")
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Suffix","HeaderHAlignment","Center")
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Seq","HeaderHAlignment","Center")
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","LMO","HeaderHAlignment","Center")
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Part","HeaderHAlignment","Center")
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Location","HeaderHAlignment","Center")
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Qty_OnHand","HeaderHAlignment","Center")
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Requirements","HeaderHAlignment","Center")
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Hours_Estimated","HeaderHAlignment","Center")
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Date_Start","HeaderHAlignment","Center")
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Date_Due","HeaderHAlignment","Center")
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Code_Source","HeaderHAlignment","Center")
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Time_Material_Lead","HeaderHAlignment","Center")
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Qty_OnOrder_PO","HeaderHAlignment","Center")
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Qty_OnOrder_WO","HeaderHAlignment","Center")
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","New_Due_Date","HeaderHAlignment","Center")
+	
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Job","CellHAlignment","Center")
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Suffix","CellHAlignment","Center")
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Seq","CellHAlignment","Center")
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","LMO","CellHAlignment","Center")
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Location","CellHAlignment","Center")
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Date_Start","CellHAlignment","Center")
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Date_Due","CellHAlignment","Center")
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Code_Source","CellHAlignment","Center")
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Time_Material_Lead","CellHAlignment","Center")
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","New_Due_Date","CellHAlignment","Center")
+	
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Qty_OnHand","DisplayCustomNumeric","#,###,##0.0000")
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Requirements","DisplayCustomNumeric","#,###,##0.0000")
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Hours_Estimated","DisplayCustomNumeric","#,###,##0.0000")
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Qty_OnOrder_PO","DisplayCustomNumeric","#,###,##0.0000")
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Qty_OnOrder_WO","DisplayCustomNumeric","#,###,##0.0000")
+	
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Date_Start","DisplayCustomDatetime","d")
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","Date_Due","DisplayCustomDatetime","d")
+	Gui.frmMsg.GsGCParts.SetColumnProperty("gvParts","New_Due_Date","DisplayCustomDatetime","d")
+	
+	'CellColor - Red 
+	V.Local.sColumnColor.Set("151, 73, 51")
+	F.Data.DataTable.Compute("dtParts","MAX(New_Due_Date)","",V.Local.dMaxPartDate)
+	Gui.frmMsg.GsGCParts.AddStyleFormatCondition("gvParts","New_Due_Date","ShipDate","Equal",V.Local.dMaxPartDate)
+	Gui.frmMsg.GsGCParts.SetStyleFormatConditionProperty("gvParts","New_Due_Date","ShipDate","BackColor",V.Local.sColumnColor)
+	Gui.frmMsg.GsGCParts.SetStyleFormatConditionProperty("gvParts","New_Due_Date","ShipDate","ForeColor","White")
+	Gui.frmMsg.GsGCParts.SetStyleFormatConditionProperty("gvParts","New_Due_Date","ShipDate","ApplyToRow",True)
+	
+	Gui.frmMsg.GsGCParts.ResumeLayout()
+	Gui.frmMsg.GsGCParts.MainView("gvParts")
+
+	F.Intrinsic.Control.Catch
+		F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}",V.Ambient.ScriptPath,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.End 
+	F.Intrinsic.Control.EndTry
+Program.Sub.LoadShipDateParts.End
+
+Program.Sub.LogCalcShipDate.Start
+	F.Intrinsic.Control.Try
+	V.Local.sError.Declare
+	
+	F.Data.DataTable.CreateFromSQL("dtLog","con","Select * From GAB_4872_ORD_TRACK;",True)
+	F.Data.DataTable.AddRow("dtLog","TID",0,"ORDER_NO",V.Global.sOrderNo,"ORDER_LINE",V.Global.sOrderLine,"GSS_USER",V.Caller.User,"DATE_RUN",V.Ambient.Now,"DATE_POSTED",V.Args.MaxDate,"DATE_CURRENT",V.Args.CurDate)
+	F.Data.DataTable.SaveToDB("dtLog","con","GAB_4872_ORD_TRACK","TID")
+	F.Data.DataTable.Close("dtLog")
+	
+	F.Intrinsic.Control.Catch
+		F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}",V.Ambient.ScriptPath,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.End 
+	F.Intrinsic.Control.EndTry
+Program.Sub.LogCalcShipDate.End
+
+Program.Sub.SetContextMenu.Start
+	F.Intrinsic.Control.Try
+	V.Local.sError.Declare
+
+	Gui.frmMsg..ContextMenuCreate("ctxParts")
+	Gui.frmMsg.GsGCParts.ContextMenuAttach("ctxParts")
+	Gui.frmMsg..ContextMenuAddItem("ctxParts","Export",0,"Export")
+	Gui.frmMsg..ContextMenuAddItem("ctxParts","ScreenPrint",0,"Screen Print")
+	Gui.frmMsg..ContextMenuSetItemEventHandler("ctxParts","Export","MenuClick")
+	Gui.frmMsg..ContextMenuSetItemEventHandler("ctxParts","ScreenPrint","MenuClick")
+
+	F.Intrinsic.Control.Catch
+		F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}",V.Ambient.ScriptPath,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.End 
+	F.Intrinsic.Control.EndTry
+Program.Sub.SetContextMenu.End
+
+Program.Sub.MenuClick.Start
+	F.Intrinsic.Control.Try
+	V.Local.sError.Declare
+	
+	V.Local.sFileExport.Declare
+	V.Local.bExcel.Declare
+	V.Local.bFileLocked.Declare
+	V.Local.sMsg.Declare
+	
+	F.Intrinsic.Control.SelectCase(V.Args.ItemName)
+		F.Intrinsic.Control.Case("EXPORT")
+			F.Automation.MSExcel.CheckPresence(V.Local.bExcel)
+			F.Intrinsic.Control.If(V.Local.bExcel)
+				F.Intrinsic.String.Build("{0}\GAB_4872_Parts_Export.xlsx",V.Caller.LocalGssTempDir,V.Local.sFileExport)
+				F.Intrinsic.File.IsFileLocked(V.Local.sFileExport,V.Local.bFileLocked)
+				F.Intrinsic.Control.If(V.Local.bFileLocked)
+					F.Intrinsic.String.Build("File is already open. Please close and export again.{0}File: {1}",V.Ambient.NewLine,V.Local.sFileExport,V.Local.sMsg)
+					F.Intrinsic.UI.Msgbox(V.Local.sMsg,"File In Use")
+				F.Intrinsic.Control.Else
+					Gui.frmMsg.GsGCParts.Export(V.Local.sFileExport,"xlsx")
+					F.Intrinsic.Task.ShellExec(0,"",V.Local.sFileExport,"","",1)
+				F.Intrinsic.Control.EndIf
+			F.Intrinsic.Control.Else
+				F.Intrinsic.String.Build("{0}\GAB_4872_Parts_Export.csv",V.Caller.LocalGssTempDir,V.Local.sFileExport)
+				F.Intrinsic.File.IsFileLocked(V.Local.sFileExport,V.Local.bFileLocked)
+				F.Intrinsic.Control.If(V.Local.bFileLocked)
+					F.Intrinsic.String.Build("File is already open. Please close and export again.{0}File: {1}",V.Ambient.NewLine,V.Local.sFileExport,V.Local.sMsg)
+					F.Intrinsic.UI.Msgbox(V.Local.sMsg,"File In Use")
+				F.Intrinsic.Control.Else
+					Gui.frmMsg.GsGCParts.Export(V.Local.sFileExport,"csv")
+				F.Intrinsic.Control.EndIf
+				F.Intrinsic.Task.ShellExec(0,"",V.Local.sFileExport,"","",1)
+			F.Intrinsic.Control.EndIf
+			
+		F.Intrinsic.Control.Case("SCREENPRINT")
+			F.Intrinsic.String.Build("{0}\GAB_4872_Parts_Export.jpeg",V.Caller.LocalGssTempDir,V.Local.sFileExport)
+			Gui.frmMsg..TakeScreenshot(V.Local.sFileExport)
+			F.Intrinsic.Task.ShellExec(0,"Open",V.Local.sFileExport,"","",0)
+			
+	F.Intrinsic.Control.EndSelect
+
+	F.Intrinsic.Control.CatchWhen(5700)
+		F.Intrinsic.UI.Msgbox("Please load data.","Export Error")
+	F.Intrinsic.Control.Catch
+		F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}",V.Ambient.ScriptPath,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.End 
+	F.Intrinsic.Control.EndTry
+Program.Sub.MenuClick.End
+
+Program.Sub.GetOptions.Start
+	F.Intrinsic.Control.Try
+	V.Local.sError.Declare
+	
+	V.Local.iCnt.Declare
+	V.Local.sRet.Declare
+	V.Local.bRet.Declare
+	
+	F.Global.Registry.ReadValue("SUPERVSR",V.Caller.CompanyCode,"4872",4872,5000,5,"",V.Local.sRet)
+	F.Intrinsic.Control.If(V.Local.sRet,=,"")
+		V.Global.bNET.Set(True)
+	F.Intrinsic.Control.Else
+		'Gen WO
+		F.Global.Registry.ReadValue("SUPERVSR",V.Caller.CompanyCode,"4872",4872,5400,0,"",V.Global.bNET)
+	F.Intrinsic.Control.EndIf
+
+	F.Intrinsic.Control.Catch
+		F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}",V.Ambient.ScriptPath,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.End 
+	F.Intrinsic.Control.EndTry
+Program.Sub.GetOptions.End
+
+Program.Sub.Comments.Start
+${$5$}$2.0.0.0$}$2
+${$6$}$avaldez$}$20190409125945075$}$CBUu04veoT9NExad5Mkb3ylWEN0INN4AyfOkGO2bWwmgx56jkQ7lA7uVc5v5cZg17KfSPqijd6g=
+Program.Sub.Comments.End
